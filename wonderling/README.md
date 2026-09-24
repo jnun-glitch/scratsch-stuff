@@ -2,55 +2,38 @@
 
 TurboWarp/Scratch-Abenteuer über eine unbekannte Sprache.
 
-## Idee
+## Wichtig: Dialogfenster
 
-Der Spieler fällt in eine fremde Wunderwelt. Die NPCs sprechen zunächst unverständlich. Durch Situationen, Gegenstände, Gesten und wiederholte Wörter lernt der Spieler die Sprache Stück für Stück.
+Die neue Extension besitzt eine **echte Dialogbox direkt über der TurboWarp-Bühne**.
 
-## Dateien
+Sie muss deshalb in TurboWarp als **„Ohne Sandbox / Unsandboxed“** geladen werden. Unsandboxed Extensions können auf die TurboWarp-VM und den DOM-Zugriff zugreifen; das wird auch bei vergleichbaren TurboWarp-Erweiterungen so verwendet. citehttps://docs.turbowarp.org/development/extensions/unsandboxed
 
-- `wonderling_engine.js` – TurboWarp Custom Extension
-- `WONDERLING_GAME_DESIGN.md` – vollständiges Game-Design
-- `README.md` – diese Anleitung
+## Installation
 
-## TurboWarp laden
+1. TurboWarp öffnen.
+2. Erweiterungen öffnen.
+3. Benutzerdefinierte Erweiterung / Custom Extension auswählen.
+4. `wonderling_engine.js` auswählen.
+5. Beim Laden **Ohne Sandbox / Unsandboxed** aktivieren.
+6. Danach erscheint **Wonderling Dialog UI**.
 
-1. Öffne TurboWarp.
-2. Öffne **Erweiterungen**.
-3. Wähle **Benutzerdefinierte Erweiterung / Custom Extension**.
-4. Öffne:
-   `wonderling_engine.js`
-5. Danach erscheint **Wonderling Engine** in den Blöcken.
+## Soforttest
 
-## Schnelltest
-
-Baue diese Blöcke:
+Diese Blöcke reichen:
 
 ```
 Wenn grüne Flagge angeklickt
-  Wonderling zurücksetzen
-  Dialog starten [intro]
-  sage (aktuelle Fantasiesprache der aktuellen Zeile) für 2 Sekunden
+Wonderling zurücksetzen
+Dialog starten [intro]
 ```
 
-Für die nächste Zeile:
+Danach erscheint automatisch die Dialogbox.
 
-```
-Wenn [Leertaste] gedrückt wird
-  nächste Dialogzeile
-```
+**Weiter:** Space, Enter, E oder die Schaltfläche „Weiter“.
 
-Weitere Testblöcke:
+**Schließen:** Escape oder „Schließen“.
 
-```
-setze Wort [luma] auf [75]%
-sage (teilweise verstandene Übersetzung) für 2 Sekunden
-
-Wort [luma] um [25]% lernen
-sage (Sprachfortschritt von [luma] %) für 2 Sekunden
-
-Beziehung zu [Mira] auf [25] setzen
-sage (Beziehung zu [Mira]) für 2 Sekunden
-```
+**Hinweis:** Die Sprache ist absichtlich nicht sofort komplett übersetzt.
 
 ## Eingebaute Dialoge
 
@@ -60,8 +43,18 @@ sage (Beziehung zu [Mira]) für 2 Sekunden
 - `clocktower`
 - `ending`
 
-## Hinweis
+## Sprache
 
-Die Extension ist die Logikschicht. Die sichtbare RPG-Dialogbox wird mit normalen TurboWarp/Scratch-Sprites gebaut.
+Wörter werden schrittweise gelernt. Unbekannte Wörter bleiben teilweise verborgen. Das Wörterbuch zeigt entdeckte Wörter.
 
-Die Fantasiesprache soll nicht sofort komplett übersetzt werden. Das eigentliche Gameplay besteht darin, Bedeutungen selbst zu entdecken.
+## Technische Dateien
+
+- `wonderling_engine.js` – Dialog-UI + Sprachengine
+- `WONDERLING_GAME_DESIGN.md` – Game Design
+- `README.md` – diese Anleitung
+
+## TurboWarp
+
+Dokumentation:
+- https://docs.turbowarp.org/development/extensions/introduction
+- https://docs.turbowarp.org/development/extensions/unsandboxed
