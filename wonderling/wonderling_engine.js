@@ -16,6 +16,10 @@
 (function (Scratch) {
   "use strict";
 
+  if (!Scratch.extensions.unsandboxed) {
+    throw new Error("Wonderling Dialog braucht TurboWarp: 'Ohne Sandbox / Unsandboxed'.");
+  }
+
   const DEMO_WORDS = {
     luma: {
       meaning: "Wasser",
@@ -200,13 +204,246 @@
     constructor() {
       this.words = this.cloneWords(DEMO_WORDS);
       this.dialogues = this.cloneDialogues(DEMO_DIALOGUES);
-
       this.activeDialogue = "";
       this.lineIndex = -1;
-
       this.relationships = {};
       this.hints = {};
+      this.lastError = "";
+      this.lastEvent = "ready";
+      this.ui = null;
+
+      this.buildUI();
+      this.installKeyboard();
     }
+
+
+    buildUI() {
+      const canvas = Scratch.vm?.renderer?.canvas;
+      const host = canvas?.parentElement;
+      if (!host) {
+        this.lastError = "TurboWarp-Bühne nicht gefunden.";
+        return;
+      }
+
+      if (getComputedStyle(host).position === "static") {
+        host.style.position = "relative";
+      }
+
+      const root = document.createElement("div");
+      root.id = "wonderling-dialog-ui";
+      Object.assign(root.style, {
+        position: "absolute",
+        inset: "0",
+        zIndex: "99999",
+        display: "none",
+        pointerEvents: "none",
+        fontFamily: "Arial, sans-serif",
+        userSelect: "none"
+      });
+
+      const panel = document.createElement("div");
+      Object.assign(panel.style, {
+        position: "absolute",
+        left: "5%",
+        right: "5%",
+        bottom: "4%",
+        minHeight: "25%",
+        padding: "14px 18px",
+        boxSizing: "border-box",
+        borderRadius: "18px",
+        background: "linear-gradient(180deg, rgba(24,18,47,.97), rgba(9,8,20,.98))",
+        border: "2px solid rgba(167,140,255,.75)",
+        boxShadow: "0 10px 36px rgba(0,0,0,.45)",
+        color: "#fff",
+        pointerEvents: "auto",
+        overflow: "hidden"
+      });
+
+      const header = document.createElement("div");
+      Object.assign(header.style, {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        gap: "10px",
+        marginBottom: "6px"
+      });
+
+      const speaker = document.createElement("div");
+      Object.assign(speaker.style, {
+        fontWeight: "800",
+        fontSize: "clamp(15px, 2.2vw, 24px)"
+      });
+
+      const title = document.createElement("div");
+      Object.assign(title.style, {
+        opacity: ".65",
+        fontSize: "clamp(10px, 1.2vw, 14px)"
+      });
+
+      header.append(speaker, title);
+
+      const fantasy = document.createElement("div");
+      Object.assign(fantasy.style, {
+        fontWeight: "700",
+        fontSize: "clamp(18px, 2.8vw, 31px)",
+        lineHeight: "1.3",
+        minHeight: "1.3em",
+        wordBreak: "break-word"
+      });
+
+      const translation = document.createElement("div");
+      Object.assign(translation.style, {
+        marginTop: "5px",
+        color: "#d8ccff",
+        fontSize: "clamp(12px, 1.7vw, 19px)",
+        minHeight: "1.4em"
+      });
+
+      const gesture = document.createElement("div");
+      Object.assign(gesture.style, {
+        marginTop: "5px",
+        opacity: ".72",
+        fontSize: "clamp(10px, 1.3vw, 15px)",
+        minHeight: "1.3em"
+      });
+
+      const footer = document.createElement("div");
+      Object.assign(footer.style, {
+        display: "flex",
+        alignItems: "center",
+        gap: "8px",
+        flexWrap: "wrap",
+        marginTop: "10px"
+      });
+
+      const status = document.createElement("div");
+      Object.assign(status.style, {
+        flex: "1 1 120px",
+        opacity: ".7",
+        fontSize: "11px"
+      });
+
+      const makeButton = (label) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.textContent = label;
+        Object.assign(b.style, {
+          padding: "8px 12px",
+          borderRadius: "10px",
+          border: "1px solid rgba(255,255,255,.2)",
+          background: "rgba(255,255,255,.08)",
+          color: "#fff",
+          fontWeight: "700",
+          cursor: "pointer"
+        });
+        return b;
+      };
+
+      const hint = makeButton("💡 Hinweis");
+      const dictionary = makeButton("📖 Wörterbuch");
+      const close = makeButton("Schließen");
+      const next = makeButton("Weiter ▶");
+
+      hint.addEventListener("click", () => this.hintCurrentWord());
+      dictionary.addEventListener("click", () => this.openDictionary());
+      close.addEventListener("click", () => this.closeDialog());
+      next.addEventListener("click", () => this.nextLine());
+
+      footer.append(status, hint, dictionary, close, next);
+      panel.append(header, fantasy, translation, gesture, footer);
+      root.appendChild(panel);
+      host.appendChild(root);
+
+      this.ui = { root, title, speaker, fantasy, translation, gesture, status, next };
+    }
+
+    updateUI() {
+      if (!this.ui?.root) return;
+
+      if (!this.dialogActive()) {
+        this.ui.root.style.display = "none";
+        return;
+      }
+
+      const dialogue = this.dialogues[this.activeDialogue];
+      const line = dialogue?.lines?.[this.lineIndex];
+
+      if (!dialogue || !line) {
+        this.ui.root.style.display = "none";
+        return;
+      }
+
+      this.ui.root.style.display = "block";
+      this.ui.title.textContent = dialogue.title || this.activeDialogue;
+      this.ui.speaker.textContent = dialogue.speaker || "NPC";
+      this.ui.fantasy.textContent = line.fantasy || "";
+      this.ui.translation.textContent =
+        this.getTranslatedText({ TEXT: line.fantasy || "" }) || "???";
+      this.ui.gesture.textContent =
+        [line.gesture, line.emotion].filter(Boolean).join("  ·  ");
+
+      const total = dialogue.lines.length;
+      const focus = this.normalizeWord(line.focusWord || line.focus || "");
+      const pct = focus ? (this.words[focus]?.confidence || 0) : 0;
+
+      this.ui.status.textContent =
+        "Zeile " + (this.lineIndex + 1) + "/" + total +
+        (focus ? " · " + focus + ": " + pct + "%" : "");
+
+      this.ui.next.textContent =
+        this.lineIndex >= total - 1 ? "Fertig ✓" : "Weiter ▶";
+    }
+
+    installKeyboard() {
+      this._keyHandler = (event) => {
+        const tag = event.target?.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA") return;
+        if (!this.dialogActive()) return;
+
+        if (event.code === "Space" || event.code === "Enter" || event.code === "KeyE") {
+          event.preventDefault();
+          this.nextLine();
+        } else if (event.code === "Escape") {
+          event.preventDefault();
+          this.closeDialog();
+        }
+      };
+      window.addEventListener("keydown", this._keyHandler);
+    }
+
+    hintCurrentWord() {
+      const line = this.getCurrentLine();
+      const key = this.normalizeWord(line?.focusWord || line?.focus || "");
+      if (!key) return;
+
+      const entry = this.words[key];
+      if (entry) {
+        entry.confidence = Math.min(100, Number(entry.confidence || 0) + 10);
+        this.hints[key] = Number(this.hints[key] || 0) + 1;
+      }
+      this.updateUI();
+    }
+
+    openDictionary() {
+      const found = Object.entries(this.words)
+        .filter(([, v]) => Number(v.confidence || 0) >= 25)
+        .sort(([a], [b]) => a.localeCompare(b));
+
+      const text = found.length
+        ? found.map(([k, v]) =>
+            k + " → " + (Number(v.confidence || 0) >= 50 ? (v.meaning || "???") : "???") +
+            " (" + Math.round(Number(v.confidence || 0)) + "%)"
+          ).join("\n")
+        : "Noch keine Wörter entdeckt.";
+
+      window.alert("WONDERLING WÖRTERBUCH\n\n" + text);
+    }
+
+    getCurrentLine() {
+      if (!this.activeDialogue) return null;
+      return this.dialogues[this.activeDialogue]?.lines?.[this.lineIndex] ?? null;
+    }
+
 
     cloneWords(source) {
       return JSON.parse(JSON.stringify(source));
@@ -226,7 +463,7 @@
     getInfo() {
       return {
         id: "wonderlingdialogue",
-        name: "Wonderling Engine",
+        name: "Wonderling Dialog UI",
         color1: "#7C5CFC",
         color2: "#6246C7",
         color3: "#4A3498",
@@ -468,6 +705,9 @@
       this.lineIndex = -1;
       this.relationships = {};
       this.hints = {};
+      this.lastError = "";
+      this.lastEvent = "reset";
+      this.updateUI();
     }
 
     startDialog(args) {
@@ -482,6 +722,9 @@
 
       this.activeDialogue = id;
       this.lineIndex = 0;
+      this.lastError = "";
+      this.lastEvent = "dialog-start:" + id;
+      this.updateUI();
     }
 
     nextLine() {
@@ -496,9 +739,11 @@
 
       if (this.lineIndex < dialogue.lines.length - 1) {
         this.lineIndex += 1;
+        this.updateUI();
       } else {
         this.activeDialogue = "";
         this.lineIndex = -1;
+        this.updateUI();
       }
     }
 
@@ -512,7 +757,12 @@
     }
 
     dialogActive() {
-      return this.getCurrentLine() !== null;
+      return (
+        Boolean(this.activeDialogue) &&
+        Boolean(this.dialogues[this.activeDialogue]) &&
+        this.lineIndex >= 0 &&
+        Boolean(this.dialogues[this.activeDialogue].lines[this.lineIndex])
+      );
     }
 
     currentSpeaker() {
