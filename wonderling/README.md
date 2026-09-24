@@ -6,7 +6,7 @@ TurboWarp/Scratch-Abenteuer über eine unbekannte Sprache.
 
 Die neue Extension besitzt eine **echte Dialogbox direkt über der TurboWarp-Bühne**.
 
-Sie muss deshalb in TurboWarp als **„Ohne Sandbox / Unsandboxed“** geladen werden. Unsandboxed Extensions können auf die TurboWarp-VM und den DOM-Zugriff zugreifen; das wird auch bei vergleichbaren TurboWarp-Erweiterungen so verwendet. citehttps://docs.turbowarp.org/development/extensions/unsandboxed
+Sie muss deshalb in TurboWarp als **„Ohne Sandbox / Unsandboxed“** geladen werden. Die Dialogbox wird als UI über der TurboWarp-Bühne angezeigt.
 
 ## Installation
 
@@ -15,7 +15,8 @@ Sie muss deshalb in TurboWarp als **„Ohne Sandbox / Unsandboxed“** geladen w
 3. Benutzerdefinierte Erweiterung / Custom Extension auswählen.
 4. `wonderling_engine.js` auswählen.
 5. Beim Laden **Ohne Sandbox / Unsandboxed** aktivieren.
-6. Danach erscheint **Wonderling Dialog UI**.
+6. Falls die alte Wonderling-Erweiterung noch im Projekt ist: erst entfernen und danach die neue Version laden.
+7. Danach erscheint **Wonderling Dialog UI**.
 
 ## Soforttest
 
