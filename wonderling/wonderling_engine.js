@@ -1,10 +1,11 @@
 /*
  * WONDERLING DIALOGUE ENGINE
  * TurboWarp Custom Extension
- * Version 1.1.0
+ * Version 1.2.0
  *
- * Designed for sandboxed TurboWarp custom extensions.
- * No external libraries and no network access required.
+ * This version includes a REAL visible dialogue UI.
+ * It must be loaded as an UNSANDBOXED TurboWarp custom extension.
+ * No external libraries or network access are required.
  *
  * Main idea:
  * - NPCs speak an unknown fantasy language.
